@@ -1,26 +1,83 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* ── Paleta Gastronómica ── */
+  --color-titi-orange: #F97316;
+  --color-titi-orange-dark: #EA580C;
+  --color-titi-orange-light: #FED7AA;
+  --color-titi-amber: #FBBF24;
+  --color-titi-amber-light: #FEF3C7;
+  --color-titi-cream: #FFFBEB;
+  --color-titi-stone-900: #1C1917;
+  --color-titi-stone-700: #44403C;
+  --color-titi-stone-500: #78716C;
+  --color-titi-stone-200: #E7E5E4;
+  --color-titi-stone-100: #F5F5F4;
+  --color-titi-white: #FFFFFF;
+  --color-titi-green: #16A34A;
+  --color-titi-green-dark: #15803D;
+
+  /* ── Tipografía ── */
+  --font-heading: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── Reset & Base ── */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
+  color: var(--color-titi-stone-900);
+  background-color: var(--color-titi-white);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+}
+
+/* ── Scrollbar custom ── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-titi-stone-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-titi-stone-200);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-titi-stone-500);
+}
+
+/* ── Utility: Levitation animation (fallback sin GSAP) ── */
+@keyframes levitate {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+
+.animate-levitate {
+  animation: levitate 3s ease-in-out infinite;
+}
+
+/* ── Utility: Pulse glow ── */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(249, 115, 22, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(249, 115, 22, 0.6);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
 }
