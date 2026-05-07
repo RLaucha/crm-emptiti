@@ -48,11 +48,10 @@ export default function CartSidebar() {
     let message = '¡Hola! Quiero hacer un pedido: 🥟\n\n';
     
     items.forEach((item) => {
-      message += `- ${item.quantity}x ${item.name} ($${(item.price * item.quantity).toLocaleString('es-AR')})\n`;
+      message += `- ${item.quantity}x ${item.name}\n`;
     });
     
-    message += `\n*Total:* $${totalPrice.toLocaleString('es-AR')}\n\n`;
-    message += `Mi nombre es: ____ y quiero (retirar por el local / envío a domicilio a la dirección ____).`;
+    message += `\nMi nombre es: ____ y quiero (retirar por el local / envío a domicilio a la dirección ____).`;
     
     const url = `${WHATSAPP_LINK}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
