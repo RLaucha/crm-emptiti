@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
+import { CartProvider } from "@/lib/CartContext";
+import CartSidebar from "@/components/CartSidebar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -42,7 +44,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${inter.variable} ${outfit.variable}`}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <CartProvider>
+          {children}
+          <CartSidebar />
+        </CartProvider>
+      </body>
     </html>
   );
 }

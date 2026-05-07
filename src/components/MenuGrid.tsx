@@ -4,12 +4,18 @@ import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { menuItems } from '@/lib/menu-data';
 import type { MenuItem } from '@/lib/types';
+import { useCart } from '@/lib/CartContext';
 
 function MenuCard({ item }: { item: MenuItem }) {
+  const { items, addItem, updateQuantity, setIsCartOpen } = useCart();
+  
+  const cartItem = items.find((i) => i.id === item.id);
+  const quantity = cartItem?.quantity || 0;
+
   return (
-    <div className="menu-card group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-titi-stone-200/50 hover:border-titi-orange/30 hover:-translate-y-1">
+    <div className="menu-card flex flex-col group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-titi-stone-200/50 hover:border-titi-orange/30 hover:-translate-y-1">
       {/* Image */}
-      <div className="relative h-44 md:h-52 overflow-hidden">
+      <div className="relative h-44 md:h-52 overflow-hidden shrink-0">
         <Image
           src={item.image}
           alt={item.name}
@@ -29,8 +35,8 @@ function MenuCard({ item }: { item: MenuItem }) {
       </div>
 
       {/* Content */}
-      <div className="p-4 md:p-5">
-        <div className="flex items-start justify-between gap-2">
+      <div className="p-4 md:p-5 flex flex-col flex-1">
+        <div className="flex items-start justify-between gap-2 mb-2">
           <h3 className="font-heading text-lg md:text-xl font-bold text-titi-stone-900 group-hover:text-titi-orange transition-colors">
             {item.name}
           </h3>
@@ -38,9 +44,44 @@ function MenuCard({ item }: { item: MenuItem }) {
             {item.category === 'empanada' ? '🥟' : '🧺'}
           </span>
         </div>
-        <p className="text-sm text-titi-stone-500 mt-2 leading-relaxed">
+        <p className="text-sm text-titi-stone-500 leading-relaxed mb-4 flex-1">
           {item.description}
         </p>
+
+        {/* Add to Cart Actions */}
+        <div className="mt-auto">
+          {quantity === 0 ? (
+            <button
+              onClick={() => addItem(item)}
+              className="w-full bg-titi-orange/10 hover:bg-titi-orange hover:text-white text-titi-orange font-bold py-2.5 rounded-xl transition-colors duration-300 flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Agregar
+            </button>
+          ) : (
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center bg-titi-stone-100 rounded-xl flex-1">
+                <button
+                  onClick={() => updateQuantity(item.id, quantity - 1)}
+                  className="w-10 h-10 flex items-center justify-center text-titi-stone-600 hover:text-titi-stone-900 hover:bg-titi-stone-200 rounded-l-xl transition-colors"
+                >
+                  -
+                </button>
+                <span className="flex-1 text-center font-bold text-titi-stone-900">
+                  {quantity}
+                </span>
+                <button
+                  onClick={() => updateQuantity(item.id, quantity + 1)}
+                  className="w-10 h-10 flex items-center justify-center text-titi-stone-600 hover:text-titi-stone-900 hover:bg-titi-stone-200 rounded-r-xl transition-colors"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
