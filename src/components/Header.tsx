@@ -8,9 +8,20 @@ export default function Header() {
   const { totalQuantity, setIsCartOpen } = useCart();
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-titi-stone-200 shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-        {/* Logo + Nombre */}
+    <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-sm">
+      {/* Top Bar Promocional */}
+      <Link 
+        href="/club" 
+        className="block bg-gradient-to-r from-titi-orange to-titi-amber text-white text-center py-2 px-4 text-sm font-semibold hover:opacity-90 transition-opacity"
+      >
+        <span className="flex items-center justify-center gap-2">
+          🎁 ¡Unite al Club Titi y ganate una empanada gratis! <span className="underline underline-offset-2 decoration-white/50">Unirme acá</span>
+        </span>
+      </Link>
+
+      <div className="border-b border-titi-stone-200">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+          {/* Logo + Nombre */}
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden border-2 border-titi-orange transition-transform group-hover:scale-105">
             <Image
@@ -54,6 +65,7 @@ export default function Header() {
             </>
           )}
         </button>
+        </div>
       </div>
     </header>
   );

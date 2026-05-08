@@ -177,6 +177,13 @@ export default function CartSidebar() {
                 ${totalPrice.toLocaleString('es-AR')}
               </span>
             </div>
+
+            <div className="bg-titi-orange/10 border border-titi-orange/20 rounded-xl p-3 mb-4 text-center">
+              <p className="text-sm text-titi-stone-700">
+                ¿Es tu primer pedido? <br/>
+                <a href="/club" className="font-bold text-titi-orange hover:text-titi-amber underline decoration-titi-orange/30 underline-offset-2">Unite al Club Titi y llevate una gratis 🥟</a>
+              </p>
+            </div>
             
             <button
               onClick={handleCheckout}
