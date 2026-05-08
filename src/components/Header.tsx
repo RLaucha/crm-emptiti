@@ -15,7 +15,7 @@ export default function Header() {
         className="block bg-gradient-to-r from-titi-orange to-titi-amber text-white text-center py-2 px-4 text-sm font-semibold hover:opacity-90 transition-opacity"
       >
         <span className="flex items-center justify-center gap-2">
-          🎁 ¡Unite al Club Titi y ganate una empanada gratis! <span className="underline underline-offset-2 decoration-white/50">Unirme acá</span>
+          🎁 ¡Unite al Club Titi y llevate la 7ma empanada de regalo (comprando 6)! <span className="underline underline-offset-2 decoration-white/50">Unirme acá</span>
         </span>
       </Link>
 

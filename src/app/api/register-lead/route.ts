@@ -7,7 +7,7 @@ import { validateArgentinePhone, generateCouponCode } from '@/lib/utils';
  * Integrar con Evolution API o similar
  */
 async function sendWhatsAppWelcome(phone: string, name: string, couponCode: string): Promise<void> {
-  const message = `¡Hola ${name}! Bienvenido al Club de Titi. Mostrá este código en tu próximo pedido online para canjear tu empanada de regalo: ${couponCode}. ¡Gracias por elegirnos! 🥟`;
+  const message = `¡Hola ${name}! Bienvenido al Club de Titi. Mostrá este código en tu próximo pedido online para llevarte la 7ma empanada de regalo (comprando 6 o más): ${couponCode}. ¡Gracias por elegirnos! 🥟`;
 
   // TODO: Integrar con Evolution API o similar
   // Ejemplo de payload:
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, phone } = body;
+    const { name, phone, birthDate } = body;
 
     // Validar campos requeridos
     if (!name || !phone) {
@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         {
           name: name.trim(),
           phone: normalizedPhone,
+          ...(birthDate && { birth_date: birthDate }),
         },
         {
           onConflict: 'phone',
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
       .insert({
         customer_id: customer.id,
         code: couponCode,
-        description: 'Empanada de Regalo',
+        description: '7ma Empanada de Regalo (con 6)',
         discount_type: 'item',
         value: 1,
         is_used: false,

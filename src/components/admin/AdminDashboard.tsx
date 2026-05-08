@@ -10,12 +10,14 @@ interface CouponData {
   created_at: string;
   customer_name: string;
   customer_phone: string;
+  customer_birth_date: string | null;
 }
 
 export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
   const [data, setData] = useState<CouponData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showOnlyBirthdays, setShowOnlyBirthdays] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -71,12 +73,21 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
     onLogout();
   };
 
-  const filteredData = data.filter(
-    (item) =>
+  const filteredData = data.filter((item) => {
+    const matchesSearch = 
       item.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.customer_phone.includes(searchTerm) ||
-      item.code.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      item.code.toLowerCase().includes(searchTerm.toLowerCase());
+
+    if (showOnlyBirthdays) {
+      if (!item.customer_birth_date) return false;
+      const currentMonth = new Date().getMonth();
+      const birthMonth = new Date(item.customer_birth_date).getMonth();
+      return matchesSearch && (currentMonth === birthMonth);
+    }
+
+    return matchesSearch;
+  });
 
   const totalCoupons = data.length;
   const usedCoupons = data.filter((d) => d.is_used).length;
@@ -149,8 +160,19 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-titi-stone-200 focus:border-titi-orange focus:outline-none transition-colors"
             />
           </div>
-          <div className="text-sm text-titi-stone-500">
-            Mostrando {filteredData.length} resultados
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm font-semibold text-titi-stone-700 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={showOnlyBirthdays}
+                onChange={(e) => setShowOnlyBirthdays(e.target.checked)}
+                className="w-4 h-4 rounded text-titi-orange focus:ring-titi-orange"
+              />
+              🎂 Cumpleañeros del mes
+            </label>
+            <div className="text-sm text-titi-stone-500">
+              Mostrando {filteredData.length} resultados
+            </div>
           </div>
         </div>
 
@@ -163,6 +185,7 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                   <th className="px-6 py-4 font-semibold text-titi-stone-700 text-sm uppercase tracking-wider">Fecha</th>
                   <th className="px-6 py-4 font-semibold text-titi-stone-700 text-sm uppercase tracking-wider">Cliente</th>
                   <th className="px-6 py-4 font-semibold text-titi-stone-700 text-sm uppercase tracking-wider">Teléfono</th>
+                  <th className="px-6 py-4 font-semibold text-titi-stone-700 text-sm uppercase tracking-wider">Cumpleaños</th>
                   <th className="px-6 py-4 font-semibold text-titi-stone-700 text-sm uppercase tracking-wider">Código</th>
                   <th className="px-6 py-4 font-semibold text-titi-stone-700 text-sm uppercase tracking-wider text-center">Acción</th>
                 </tr>
@@ -187,6 +210,13 @@ export default function AdminDashboard({ onLogout }: { onLogout: () => void }) {
                         <a href={`https://wa.me/${item.customer_phone}`} target="_blank" rel="noopener noreferrer" className="hover:text-titi-green underline decoration-titi-green/30 underline-offset-2">
                           {item.customer_phone}
                         </a>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-titi-stone-600">
+                        {item.customer_birth_date ? new Date(item.customer_birth_date).toLocaleDateString('es-AR', {
+                          day: '2-digit',
+                          month: 'long',
+                          timeZone: 'UTC'
+                        }) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-3 py-1 rounded-md font-mono text-sm font-bold ${

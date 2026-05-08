@@ -22,7 +22,8 @@ export async function GET(request: NextRequest) {
         created_at,
         customers (
           name,
-          phone
+          phone,
+          birth_date
         )
       `)
       .order('created_at', { ascending: false });
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
       created_at: coupon.created_at,
       customer_name: coupon.customers?.name || 'Desconocido',
       customer_phone: coupon.customers?.phone || 'Desconocido',
+      customer_birth_date: coupon.customers?.birth_date || null,
     }));
 
     return NextResponse.json({ success: true, data: formattedData });

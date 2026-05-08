@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS customers (
   phone TEXT NOT NULL UNIQUE,
   total_purchases INTEGER DEFAULT 0,
   last_purchase_at TIMESTAMPTZ,
+  birth_date DATE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
 
   -- Validación formato teléfono argentino (código país + código área + número)
@@ -35,7 +36,7 @@ CREATE TABLE IF NOT EXISTS coupons (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
   code TEXT NOT NULL UNIQUE,
-  description TEXT NOT NULL DEFAULT 'Empanada de Regalo',
+  description TEXT NOT NULL DEFAULT '7ma Empanada de Regalo (con 6)',
   discount_type TEXT NOT NULL DEFAULT 'item' CHECK (discount_type IN ('percentage', 'fixed', 'item')),
   value NUMERIC(10, 2) DEFAULT 0,
   is_used BOOLEAN DEFAULT FALSE,

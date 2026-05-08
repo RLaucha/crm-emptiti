@@ -10,6 +10,7 @@ export default function ClubPage() {
 
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [couponCode, setCouponCode] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -99,10 +100,13 @@ export default function ClubPage() {
     setStatus('loading');
 
     try {
+      const payload: any = { name: name.trim(), phone };
+      if (birthDate) payload.birthDate = birthDate;
+
       const res = await fetch('/api/register-lead', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), phone }),
+        body: JSON.stringify(payload),
       });
 
       const data = await res.json();
@@ -176,9 +180,9 @@ export default function ClubPage() {
                 ¡CLUB DE TITI! 🥟
               </h1>
               <p className="text-titi-stone-500 text-sm md:text-base leading-relaxed">
-                Dejanos tu WhatsApp y llevate una{' '}
-                <span className="font-bold text-titi-orange">empanada de regalo</span>{' '}
-                en tu próxima compra.
+                Dejanos tu WhatsApp y llevate la{' '}
+                <span className="font-bold text-titi-orange">7ma empanada de regalo</span>{' '}
+                (con tu compra de 6 o más).
               </p>
             </div>
 
@@ -235,6 +239,29 @@ export default function ClubPage() {
                 )}
                 <p className="text-titi-stone-500/60 text-xs mt-1.5">
                   Sin el 15. Ej: 1123456789
+                </p>
+              </div>
+
+              {/* Cumpleaños (Opcional) */}
+              <div>
+                <label
+                  htmlFor="club-birthdate"
+                  className="block text-sm font-semibold text-titi-stone-700 mb-1.5"
+                >
+                  Fecha de nacimiento <span className="text-titi-stone-400 font-normal">(Opcional)</span>
+                </label>
+                <div className="relative">
+                  <input
+                    id="club-birthdate"
+                    type="date"
+                    value={birthDate}
+                    onChange={(e) => setBirthDate(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-titi-stone-200 focus:border-titi-orange focus:outline-none transition-colors text-titi-stone-900"
+                    disabled={status === 'loading'}
+                  />
+                </div>
+                <p className="text-titi-stone-500/60 text-xs mt-1.5 flex items-center gap-1">
+                  🎁 Para mandarte regalitos en tu cumple
                 </p>
               </div>
 
