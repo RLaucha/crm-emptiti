@@ -91,7 +91,7 @@ export default function OrdersDashboard({ onLogout }: { onLogout: () => void }) 
   // Fetch orders
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/orders');
+      const res = await fetch('/api/admin/orders', { cache: 'no-store' });
       if (res.status === 401) {
         onLogout();
         return;

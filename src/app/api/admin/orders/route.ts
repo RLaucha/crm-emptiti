@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('admin_token')?.value;
