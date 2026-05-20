@@ -7,11 +7,11 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 /**
  * Helper para crear el cliente solo si las variables están configuradas
  */
-function createSafeClient(url: string, key: string): SupabaseClient | null {
+function createSafeClient(url: string, key: string, options?: Record<string, any>): SupabaseClient | null {
   if (!url || !key || url === 'tu_url_aqui' || key.startsWith('tu_')) {
     return null;
   }
-  return createClient(url, key);
+  return createClient(url, key, options);
 }
 
 /**
@@ -26,3 +26,16 @@ export const supabase = createSafeClient(supabaseUrl, supabaseAnonKey);
  * NUNCA exponer en el cliente
  */
 export const supabaseAdmin = createSafeClient(supabaseUrl, supabaseServiceKey);
+
+/**
+ * Cliente de Supabase para Realtime (browser-safe)
+ * Usa la anon key con configuración de Realtime optimizada
+ * Usar en componentes client que necesiten escuchar cambios en tiempo real
+ */
+export const supabaseRealtime = createSafeClient(supabaseUrl, supabaseAnonKey, {
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});

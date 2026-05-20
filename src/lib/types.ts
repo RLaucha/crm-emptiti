@@ -31,3 +31,26 @@ export interface MenuItem {
   image: string;
   featured?: boolean;
 }
+
+export interface OrderItem {
+  id: string;
+  name: string;
+  quantity: number;
+  price: number;
+  category: 'empanada' | 'canastita';
+}
+
+export interface Order {
+  id: string;
+  customer_id: string;
+  items: OrderItem[];
+  total_amount: number;
+  status: 'pendiente' | 'cocina' | 'en_camino' | 'entregado';
+  delivery_type: 'retiro' | 'envio';
+  delivery_address: string | null;
+  notes: string | null;
+  created_at: string;
+  // Joined from customers
+  customer_name?: string;
+  customer_phone?: string;
+}

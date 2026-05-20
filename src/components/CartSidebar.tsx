@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { useCart } from '@/lib/CartContext';
-import { WHATSAPP_LINK } from '@/lib/menu-data';
+
+type CheckoutStep = 1 | 2 | 3;
+type DeliveryType = 'retiro' | 'envio';
 
 export default function CartSidebar() {
   const {
@@ -14,9 +16,20 @@ export default function CartSidebar() {
     totalQuantity,
     updateQuantity,
     removeItem,
+    clearCart,
   } = useCart();
   
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // Checkout form state
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>('retiro');
+  const [address, setAddress] = useState('');
+  const [notes, setNotes] = useState('');
 
   // Close when clicking outside
   useEffect(() => {
@@ -31,7 +44,6 @@ export default function CartSidebar() {
 
     if (isCartOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      // Prevent body scroll
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'auto';
@@ -43,18 +55,70 @@ export default function CartSidebar() {
     };
   }, [isCartOpen, setIsCartOpen]);
 
-  // Generate WhatsApp message
-  const handleCheckout = () => {
-    let message = '¡Hola! Quiero hacer un pedido: 🥟\n\n';
-    
-    items.forEach((item) => {
-      message += `- ${item.quantity}x ${item.name}\n`;
-    });
-    
-    message += `\nMi nombre es: ____ y quiero (retirar por el local / envío a domicilio a la dirección ____).`;
-    
-    const url = `${WHATSAPP_LINK}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
+  // Reset to step 1 when sidebar closes
+  useEffect(() => {
+    if (!isCartOpen) {
+      // Delay reset so animation finishes
+      const timer = setTimeout(() => {
+        if (checkoutStep !== 3) {
+          setCheckoutStep(1);
+        }
+        setError('');
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isCartOpen, checkoutStep]);
+
+  const handleCheckout = async () => {
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const payload = {
+        name: name.trim(),
+        phone: phone.trim(),
+        deliveryType,
+        address: deliveryType === 'envio' ? address.trim() : null,
+        notes: notes.trim() || null,
+        items: items.map((item) => ({
+          id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          category: item.category,
+        })),
+      };
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        setCheckoutStep(3);
+      } else {
+        setError(data.error || 'Error al procesar el pedido.');
+      }
+    } catch (err) {
+      setError('Error de conexión. Intentá de nuevo.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleFinish = () => {
+    clearCart();
+    setCheckoutStep(1);
+    setName('');
+    setPhone('');
+    setDeliveryType('retiro');
+    setAddress('');
+    setNotes('');
+    setError('');
+    setIsCartOpen(false);
   };
 
   return (
@@ -76,12 +140,31 @@ export default function CartSidebar() {
       >
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-titi-stone-200">
-          <h2 className="font-heading text-xl font-bold text-titi-stone-900 flex items-center gap-2">
-            <span>Tu Pedido</span>
-            <span className="bg-titi-orange text-white text-xs px-2 py-0.5 rounded-full">
-              {totalQuantity}
-            </span>
-          </h2>
+          <div className="flex items-center gap-2">
+            {checkoutStep === 2 && (
+              <button
+                onClick={() => { setCheckoutStep(1); setError(''); }}
+                className="p-1.5 text-titi-stone-500 hover:text-titi-stone-900 hover:bg-titi-stone-100 rounded-full transition-colors"
+                aria-label="Volver al carrito"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            <h2 className="font-heading text-xl font-bold text-titi-stone-900 flex items-center gap-2">
+              <span>
+                {checkoutStep === 1 && 'Tu Pedido'}
+                {checkoutStep === 2 && 'Datos del Pedido'}
+                {checkoutStep === 3 && '¡Confirmado!'}
+              </span>
+              {checkoutStep === 1 && (
+                <span className="bg-titi-orange text-white text-xs px-2 py-0.5 rounded-full">
+                  {totalQuantity}
+                </span>
+              )}
+            </h2>
+          </div>
           <button
             onClick={() => setIsCartOpen(false)}
             className="p-2 text-titi-stone-500 hover:text-titi-stone-900 hover:bg-titi-stone-100 rounded-full transition-colors"
@@ -93,83 +176,241 @@ export default function CartSidebar() {
           </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-5">
-          {items.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
-              <div className="text-6xl">🥟</div>
-              <div>
-                <p className="text-lg font-bold text-titi-stone-900">Tu carrito está vacío</p>
-                <p className="text-titi-stone-500 mt-1">¡Agregá algunas empanadas para empezar!</p>
+        {/* ══════════════════════════════════ */}
+        {/* STEP 1: Cart Items */}
+        {/* ══════════════════════════════════ */}
+        {checkoutStep === 1 && (
+          <div className="flex-1 overflow-y-auto p-5">
+            {items.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
+                <div className="text-6xl">🥟</div>
+                <div>
+                  <p className="text-lg font-bold text-titi-stone-900">Tu carrito está vacío</p>
+                  <p className="text-titi-stone-500 mt-1">¡Agregá algunas empanadas para empezar!</p>
+                </div>
+                <button
+                  onClick={() => setIsCartOpen(false)}
+                  className="mt-4 px-6 py-2 bg-titi-stone-100 hover:bg-titi-stone-200 text-titi-stone-700 font-semibold rounded-full transition-colors"
+                >
+                  Ver Menú
+                </button>
               </div>
-              <button
-                onClick={() => setIsCartOpen(false)}
-                className="mt-4 px-6 py-2 bg-titi-stone-100 hover:bg-titi-stone-200 text-titi-stone-700 font-semibold rounded-full transition-colors"
-              >
-                Ver Menú
-              </button>
-            </div>
-          ) : (
-            <ul className="space-y-4">
-              {items.map((item) => (
-                <li key={item.id} className="flex gap-4 bg-white border border-titi-stone-200 p-3 rounded-2xl shadow-sm">
-                  <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-titi-stone-100">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  
-                  <div className="flex-1 flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                      <h3 className="font-bold text-titi-stone-900 text-sm leading-tight pr-2">
-                        {item.name}
-                      </h3>
-                      <button
-                        onClick={() => removeItem(item.id)}
-                        className="text-titi-stone-400 hover:text-red-500 transition-colors"
-                        aria-label="Eliminar"
-                      >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+            ) : (
+              <ul className="space-y-4">
+                {items.map((item) => (
+                  <li key={item.id} className="flex gap-4 bg-white border border-titi-stone-200 p-3 rounded-2xl shadow-sm">
+                    <div className="relative w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-titi-stone-100">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                      />
                     </div>
                     
-                    <div className="flex items-center justify-between mt-2">
-                      <div className="font-semibold text-titi-orange">
-                        ${(item.price * item.quantity).toLocaleString('es-AR')}
+                    <div className="flex-1 flex flex-col justify-between">
+                      <div className="flex justify-between items-start">
+                        <h3 className="font-bold text-titi-stone-900 text-sm leading-tight pr-2">
+                          {item.name}
+                        </h3>
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="text-titi-stone-400 hover:text-red-500 transition-colors"
+                          aria-label="Eliminar"
+                        >
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
                       </div>
                       
-                      <div className="flex items-center bg-titi-stone-100 rounded-lg">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-8 h-8 flex items-center justify-center text-titi-stone-600 hover:text-titi-stone-900 hover:bg-titi-stone-200 rounded-l-lg transition-colors"
-                        >
-                          -
-                        </button>
-                        <span className="w-8 text-center text-sm font-bold text-titi-stone-900">
-                          {item.quantity}
-                        </span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-8 h-8 flex items-center justify-center text-titi-stone-600 hover:text-titi-stone-900 hover:bg-titi-stone-200 rounded-r-lg transition-colors"
-                        >
-                          +
-                        </button>
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="font-semibold text-titi-orange">
+                          ${(item.price * item.quantity).toLocaleString('es-AR')}
+                        </div>
+                        
+                        <div className="flex items-center bg-titi-stone-100 rounded-lg">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="w-8 h-8 flex items-center justify-center text-titi-stone-600 hover:text-titi-stone-900 hover:bg-titi-stone-200 rounded-l-lg transition-colors"
+                          >
+                            -
+                          </button>
+                          <span className="w-8 text-center text-sm font-bold text-titi-stone-900">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="w-8 h-8 flex items-center justify-center text-titi-stone-600 hover:text-titi-stone-900 hover:bg-titi-stone-200 rounded-r-lg transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
-        {/* Footer */}
-        {items.length > 0 && (
+        {/* ══════════════════════════════════ */}
+        {/* STEP 2: Checkout Form */}
+        {/* ══════════════════════════════════ */}
+        {checkoutStep === 2 && (
+          <div className="flex-1 overflow-y-auto p-5">
+            <div className="space-y-5">
+              {/* Resumen rápido */}
+              <div className="bg-titi-stone-50 rounded-xl p-3 border border-titi-stone-100">
+                <p className="text-sm text-titi-stone-500">
+                  {totalQuantity} {totalQuantity === 1 ? 'item' : 'items'} · <span className="font-bold text-titi-stone-900">${totalPrice.toLocaleString('es-AR')}</span>
+                </p>
+              </div>
+
+              {/* Nombre */}
+              <div>
+                <label className="block text-sm font-semibold text-titi-stone-700 mb-1.5">
+                  Nombre *
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-titi-stone-200 focus:border-titi-orange focus:outline-none transition-colors"
+                  placeholder="Tu nombre"
+                  required
+                />
+              </div>
+
+              {/* Teléfono */}
+              <div>
+                <label className="block text-sm font-semibold text-titi-stone-700 mb-1.5">
+                  Teléfono *
+                </label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-titi-stone-200 focus:border-titi-orange focus:outline-none transition-colors"
+                  placeholder="1123456789"
+                  required
+                />
+              </div>
+
+              {/* Tipo de entrega */}
+              <div>
+                <label className="block text-sm font-semibold text-titi-stone-700 mb-2">
+                  Tipo de Entrega *
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryType('retiro')}
+                    className={`p-3 rounded-xl border-2 text-center font-semibold text-sm transition-all ${
+                      deliveryType === 'retiro'
+                        ? 'border-titi-orange bg-titi-orange/5 text-titi-orange'
+                        : 'border-titi-stone-200 text-titi-stone-500 hover:border-titi-stone-300'
+                    }`}
+                  >
+                    🏠 Retiro en local
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeliveryType('envio')}
+                    className={`p-3 rounded-xl border-2 text-center font-semibold text-sm transition-all ${
+                      deliveryType === 'envio'
+                        ? 'border-titi-orange bg-titi-orange/5 text-titi-orange'
+                        : 'border-titi-stone-200 text-titi-stone-500 hover:border-titi-stone-300'
+                    }`}
+                  >
+                    🛵 Envío a domicilio
+                  </button>
+                </div>
+              </div>
+
+              {/* Dirección (condicional) */}
+              {deliveryType === 'envio' && (
+                <div className="animate-[fadeIn_0.2s_ease-out]">
+                  <label className="block text-sm font-semibold text-titi-stone-700 mb-1.5">
+                    Dirección *
+                  </label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border-2 border-titi-stone-200 focus:border-titi-orange focus:outline-none transition-colors"
+                    placeholder="Calle, Número, Piso"
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Notas */}
+              <div>
+                <label className="block text-sm font-semibold text-titi-stone-700 mb-1.5">
+                  Notas <span className="text-titi-stone-400 font-normal">(opcional)</span>
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border-2 border-titi-stone-200 focus:border-titi-orange focus:outline-none transition-colors resize-none"
+                  placeholder="Ej: Sin picante, timbre 2B..."
+                  rows={2}
+                />
+              </div>
+
+              {/* Error */}
+              {error && (
+                <div className="bg-red-50 text-red-600 text-sm p-3 rounded-xl border border-red-200 text-center">
+                  {error}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════ */}
+        {/* STEP 3: Confirmation */}
+        {/* ══════════════════════════════════ */}
+        {checkoutStep === 3 && (
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
+            <div className="w-20 h-20 bg-titi-green/10 rounded-full flex items-center justify-center mb-6 animate-[bounceIn_0.5s_ease-out]">
+              <svg className="w-10 h-10 text-titi-green" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-heading font-bold text-titi-stone-900 mb-2">
+              ¡Pedido Confirmado!
+            </h3>
+            <p className="text-titi-stone-500 mb-6">
+              Lo estamos preparando. Te avisamos cuando esté listo. 🥟
+            </p>
+            <div className="bg-titi-stone-50 rounded-xl p-4 w-full max-w-xs mb-6 border border-titi-stone-100">
+              <div className="flex justify-between text-sm mb-1">
+                <span className="text-titi-stone-500">Total</span>
+                <span className="font-bold text-titi-stone-900">${totalPrice.toLocaleString('es-AR')}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-titi-stone-500">Entrega</span>
+                <span className="font-semibold text-titi-stone-700">
+                  {deliveryType === 'retiro' ? '🏠 Retiro en local' : '🛵 Envío'}
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={handleFinish}
+              className="px-8 py-3 bg-titi-stone-900 hover:bg-titi-stone-700 text-white font-bold rounded-xl transition-colors"
+            >
+              Volver al Menú
+            </button>
+          </div>
+        )}
+
+        {/* ══════════════════════════════════ */}
+        {/* Footer (Step 1 & 2) */}
+        {/* ══════════════════════════════════ */}
+        {checkoutStep === 1 && items.length > 0 && (
           <div className="border-t border-titi-stone-200 p-5 bg-titi-stone-50">
             <div className="flex justify-between items-center mb-4 text-lg">
               <span className="font-semibold text-titi-stone-700">Total:</span>
@@ -186,13 +427,40 @@ export default function CartSidebar() {
             </div>
             
             <button
-              onClick={handleCheckout}
-              className="w-full flex items-center justify-center gap-2 bg-titi-green hover:bg-titi-green-dark text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
+              onClick={() => setCheckoutStep(2)}
+              className="w-full flex items-center justify-center gap-2 bg-titi-orange hover:bg-titi-orange-dark text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02]"
             >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              Continuar al Checkout
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
-              Pedir por WhatsApp
+            </button>
+          </div>
+        )}
+
+        {checkoutStep === 2 && (
+          <div className="border-t border-titi-stone-200 p-5 bg-titi-stone-50">
+            <button
+              onClick={handleCheckout}
+              disabled={isSubmitting || !name.trim() || !phone.trim() || (deliveryType === 'envio' && !address.trim())}
+              className="w-full flex items-center justify-center gap-2 bg-titi-green hover:bg-titi-green-dark text-white font-bold py-4 px-6 rounded-xl shadow-lg transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            >
+              {isSubmitting ? (
+                <>
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Procesando...
+                </>
+              ) : (
+                <>
+                  Confirmar Pedido
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </>
+              )}
             </button>
           </div>
         )}

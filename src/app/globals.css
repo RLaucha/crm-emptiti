@@ -16,6 +16,9 @@
   --color-titi-white: #FFFFFF;
   --color-titi-green: #16A34A;
   --color-titi-green-dark: #15803D;
+  --color-titi-blue: #3B82F6;
+  --color-titi-blue-dark: #2563EB;
+  --color-titi-stone-50: #FAFAF9;
 
   /* ── Tipografía ── */
   --font-heading: 'Outfit', sans-serif;
@@ -81,3 +84,14 @@ h1, h2, h3, h4, h5, h6 {
 .animate-pulse-glow {
   animation: pulse-glow 2s ease-in-out infinite;
 }
+
+/* ── Utility: Blink pending order ── */
+@keyframes blink-pending {
+  0%, 100% { background-color: #FFFFFF; }
+  50% { background-color: #FFF7ED; }
+}
+
+.animate-blink-pending {
+  animation: blink-pending 1.5s ease-in-out 5;
+}
+
